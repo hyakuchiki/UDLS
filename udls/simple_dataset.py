@@ -24,7 +24,7 @@ def dummy_load(name):
         return None
 
 
-def simple_audio_preprocess(sampling_rate, N):
+def simple_audio_preprocess(sampling_rate, N, sil_thres=1e-2):
     def preprocess(name):
         try:
             x, sr = li.load(name, sr=sampling_rate)
@@ -39,7 +39,16 @@ def simple_audio_preprocess(sampling_rate, N):
         x = np.pad(x, (0, pad))
 
         x = x.reshape(-1, N)
-        return x.astype(np.float32)
+        xs = []
+        for chunk in x:
+            # remove silent chunks
+            if np.max(np.abs(chunk)) > sil_thres:
+                xs.append(chunk)
+        if len(xs) == 0:
+            return None
+        else:
+            x = np.stack(xs, axis=0)
+            return x.astype(np.float32)
 
     return preprocess
 
